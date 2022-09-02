@@ -4,6 +4,7 @@ import Base: show, getindex
 using LinearAlgebra
 using Molecules
 using Molecules:i,Cn,Sn,σ
+using StaticArrays
 export Symel
 tol = 1E-5
 
