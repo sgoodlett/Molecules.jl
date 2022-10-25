@@ -1,25 +1,25 @@
 struct Symel
-    symbol
-    rrep
+    symbol::String
+    rrep::Matrix{Float64}
 end
 
 struct Chartable
-    name
-    irreps
-    classes
-    class_orders
-    characters
-    irrep_dims
+    name::String
+    irreps::Vector{String}
+    classes::Vector{String}
+    class_orders::Vector{Int64}
+    characters::Matrix{Float64}
+    irrep_dims::Dict{String, Int64}
 end
 
 struct SymText
-    pg
-    symels
-    ctab
-    class_map
-    atom_map
-    mult_table
-    order
+    pg::String
+    symels::Vector{Molecules.Symmetry.CharacterTables.Symel}
+    ctab::Molecules.Symmetry.CharacterTables.Chartable
+    class_map::Vector{Int64}
+    atom_map::Matrix{Int64}
+    mult_table::Matrix{Int64}
+    order::Int64
 end
 
 struct PG
