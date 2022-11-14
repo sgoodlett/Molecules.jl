@@ -360,14 +360,20 @@ end
 function generate_I_vectors()
     ϕ = (1+(5^0.5))/2
     ϕi = 1/ϕ
-    faces = [[1.0 ϕ 0.0],[1.0 -ϕ 0.0],[-1.0 ϕ 0.0],[-1.0 -ϕ 0.0],
+    faces_i = [[1.0 ϕ 0.0],[1.0 -ϕ 0.0],[-1.0 ϕ 0.0],[-1.0 -ϕ 0.0],
              [0.0 1.0 ϕ],[0.0 1.0 -ϕ],[0.0 -1.0 ϕ],[0.0 -1.0 -ϕ],
              [ϕ 0.0 1.0],[-ϕ 0.0 1.0],[ϕ 0.0 -1.0],[-ϕ 0.0 -1.0]]
-    vertices = [[1.0 1.0 1.0],[1.0 1.0 -1.0],[1.0 -1.0 1.0],[-1.0 1.0 1.0],
+    vertices_i = [[1.0 1.0 1.0],[1.0 1.0 -1.0],[1.0 -1.0 1.0],[-1.0 1.0 1.0],
                 [1.0 -1.0 -1.0],[-1.0 1.0 -1.0],[-1.0 -1.0 1.0],[-1.0 -1.0 -1.0],
                 [0.0 ϕ ϕi],[0.0 ϕ -ϕi],[0.0 -ϕ ϕi],[0.0 -ϕ -ϕi],
                 [ϕi 0.0 ϕ],[-ϕi 0.0 ϕ],[ϕi 0.0 -ϕ],[-ϕi 0.0 -ϕ],
                 [ϕ ϕi 0.0],[ϕ -ϕi 0.0],[-ϕ ϕi 0.0],[-ϕ -ϕi 0.0]]
+    # Reorienting vectors such that one face is on the z-axis with "pentagon" pointing at the negative y-axis
+    θ = -acos(ϕ/sqrt(1+ϕ^2))
+    rmat = Molecules.rotation_matrix([1 0 0], θ)
+    faces = Vector{Float64}[rmat*vec(f) for f in faces_i]
+    vertices = Vector{Float64}[rmat*vec(v) for v in vertices_i]
+    
     l = length(vertices)
     edglen = 2*ϕi
     edgecenters = []

@@ -12,6 +12,7 @@ include("Basics.jl")
 include("PointGroupGenerators.jl")
 include("CharacterTableGenerators.jl")
 include("MultiplicationTable.jl")
-include("IrrepMats.jl")
 include("Main.jl")
+include("Ih_irrm.jl")
+include("IrrepMats.jl")
 end
