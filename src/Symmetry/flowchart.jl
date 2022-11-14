@@ -42,6 +42,12 @@ function find_point_group(mol::Vector{<:Atom})
                     break
                 end
             end
+            # Reorienting vectors such that one face is on the z-axis with "pentagon" pointing at the negative y-axis
+            ϕ = (1+sqrt(5))/2
+            θ = -acos(ϕ/sqrt(1+ϕ^2))
+            rmat = Molecules.rotation_matrix(saxis, θ)
+            paxis = rmat*paxis
+            taxis = rmat*paxis
             #for a in axes
             #    if isapprox(0.0, dot(paxis,a), atol=tol)
             #        saxis = a
