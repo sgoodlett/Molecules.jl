@@ -1,7 +1,15 @@
+"""
+Irreducible representation matrices for the symels in the orientation we generate
+them in. If you want to use these, make sure to rotate the molecule to the SYMEL FRAME
+and not the other way around. The functions at the end are for checking that the
+matrices are isomorphic to the symels with respect to the group's multiplication table,
+and that they follow the Great Orthogonality Theorem.
+"""
+
 c3 = cos(π/3)
 s3 = sin(π/3)
 c4 = cos(π/4)
-s4 = sin(π/4) # They are the same but IDK
+s4 = sin(π/4) # They are the same but would probably confuse me when making the matrices
 c5 = cos(π/5)
 s5 = sin(π/5)
 c25 = cos(2π/5)

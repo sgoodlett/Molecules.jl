@@ -17,6 +17,9 @@ function distance(A::Atom, B::Atom)
     return (((a[1]-b[1])^2) + ((a[2]-b[2])^2) + ((a[3]-b[3])^2))^0.5
 end
 
+"""
+Build interatomic distance matrix
+"""
 function buildD(mol::Vector{<:Atom})
     len = size(mol)[1]
     atoms = []
@@ -31,6 +34,10 @@ function buildD(mol::Vector{<:Atom})
     return DistanceMatrix(atoms, arr)
 end
 
+"""
+Check if two distance matrix vectors are equivalent under permutation 
+within some tolerance δ
+"""
 function checkSEA(A::Vector{Float64}, B::Vector{Float64}, δ)::Bool
     a = sort(A)
     b = sort(B)
@@ -45,43 +52,49 @@ function checkSEA(A::Vector{Float64}, B::Vector{Float64}, δ)::Bool
     return true
 end
 
+"""
+Find sets of Symmetry Equivalent Atoms
+"""
 function findSEA(D::DistanceMatrix, δ::Int)
     len = size(D.distances)[1]
-    out = Tuple[]
+    equiv_atom_pairs = Tuple[]
+    # Find all pairs of equivalent Atoms
     for i = 1:len, j = i+1:len
         if cmp(D.atoms[i].mass, D.atoms[j].mass) == 0
             c = checkSEA(D.distances[:,i], D.distances[:,j], δ)
             if c
-                push!(out, (i,j))
+                push!(equiv_atom_pairs, (i,j))
             end
         end
     end
-    nonos = Int[]
-    biggerun = SEA[]
+    
+    # Find all sets of Symmetry Equivalent Atoms
+    already_checked = Int[]
+    seas = SEA[]
     for i = 1:len
-        if i in nonos
+        if i in already_checked
             continue
         else
-            biggun = Int[]
-            push!(biggun,i)
+            sea_idxs = Int[]
+            push!(sea_idxs,i)
         end
 
-        for k in out
+        for k in equiv_atom_pairs
             if i in k
                 if i == k[1]
-                    push!(biggun, k[2])
-                    push!(nonos, k[2])
+                    push!(sea_idxs, k[2])
+                    push!(already_checked, k[2])
                 else
-                    push!(biggun, k[1])
-                    push!(nonos, k[1])
+                    push!(sea_idxs, k[1])
+                    push!(already_checked, k[1])
                 end
             end
         end
-    sea = SEA("None", biggun, [0.0, 0.0, 0.0])
-    push!(biggerun, sea)
+    sea = SEA("None", sea_idxs, [0.0, 0.0, 0.0])
+    push!(seas, sea)
     end
 
-    return biggerun
+    return seas
 end
 
 

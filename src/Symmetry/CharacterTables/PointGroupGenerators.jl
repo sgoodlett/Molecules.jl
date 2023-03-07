@@ -1,3 +1,9 @@
+"""
+Functions for generating symels of various point groups. Generally,
+a primary axis (z) is used to generate the symels from a secondary
+axis (x) by rotation of 2π/n. This can be done for rotations and 
+reflections.
+"""
 function generate_Cn(n)
     symels = Vector{Symel}([])
     axis = [0 0 1]'

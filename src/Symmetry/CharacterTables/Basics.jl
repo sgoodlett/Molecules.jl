@@ -3,7 +3,7 @@ struct Symel
     rrep::Matrix{Float64}
 end
 
-struct Chartable
+struct CharacterTable
     name::String
     irreps::Vector{String}
     classes::Vector{String}
@@ -15,7 +15,7 @@ end
 struct SymText
     pg::String
     symels::Vector{Molecules.Symmetry.CharacterTables.Symel}
-    ctab::Molecules.Symmetry.CharacterTables.Chartable
+    ctab::Molecules.Symmetry.CharacterTables.CharacterTable
     class_map::Vector{Int64}
     atom_map::Matrix{Int64}
     mult_table::Matrix{Int64}
@@ -29,13 +29,18 @@ struct PG
     subfamily
 end
 
+"""
+Reduce n by i by dividing both by their greatest common divisor
+"""
 function reduce(n, i)
     g = gcd(n, i)
     return div(n, g), div(i, g)
 end
 
+"""
+A quick implementation of the Euclid algorithm for finding the greatest common divisor
+"""
 function gcd(A, B)
-    # A quick implementation of the Euclid algorithm for finding the greatest common divisor
     a = max(A,B)
     b = min(A,B)
     if a == 0
@@ -57,7 +62,7 @@ function Base.:(==)(A::Symel, B::Symel)
 end
 
 using Formatting
-function string_repr(ctab::Chartable)
+function string_repr(ctab::CharacterTable)
     l = length(ctab.classes) + 1
     longstrang = "-"^(l*10)*"\n"
     out = longstrang
@@ -128,7 +133,7 @@ function show(io::IO, ::MIME"text/plain", symels::Vector{Symel})
     print(io, string_repr(symels))
 end
 
-function show(io::IO, ::MIME"text/plain", ctab::Chartable)
+function show(io::IO, ::MIME"text/plain", ctab::CharacterTable)
     print(io, string_repr(ctab))
 end
 
@@ -136,6 +141,6 @@ function show(io::IO, ::MIME"text/plain", symtext::SymText)
     print(io, string_repr(symtext))
 end
 
-function getindex(ctab::Chartable, irrep::String)
+function getindex(ctab::CharacterTable, irrep::String)
     return ctab.characters[findall(x->x==irrep, ctab.irreps)[1],:]
 end

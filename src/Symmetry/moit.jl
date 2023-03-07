@@ -1,9 +1,13 @@
 using LinearAlgebra
 
 export calcmoit, eigenmoit
+"""
+    Molecules.Symmetry.calcmoit(atoms::Vector{<:Atom})
 
+Returns the Moment of Inertia Tensor
+"""
 function calcmoit(atoms)
-    # We center the atoms at their center of mass
+    # Translate molecule to COM
     Atoms = Molecules.translate(atoms, Molecules.center_of_mass(atoms))
     I = zeros(Float64, (3,3))
     len = size(Atoms)[1]
@@ -28,6 +32,11 @@ function calcmoit(atoms)
     return I
 end
 
+"""
+    Molecules.Symmetry.eigenmoit(moit::Matrix)
+
+Return eigenvalues and eigenfunctions of Moment of Inertia Tensor (moit)
+"""
 function eigenmoit(moit)
     A = LinearAlgebra.Symmetric(moit)
     eval, evec = LinearAlgebra.eigen(A)

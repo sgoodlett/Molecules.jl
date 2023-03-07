@@ -6,8 +6,10 @@ import Molecules: center_of_mass, translate
 
     Determines point group of mol by searching for identifying symmetry operations.
     Returns a point group string ("D3h", "C5v", "Oh", etc.), a primary axis, and a secondary axis.
-    The primary and secondary axes define vectors we can rotate generated symmetry elements onto.
+    The primary and secondary axes (paxis and saxis) define vectors we can rotate generated symmetry elements onto.
     This rotation is carried out by the function Molecules.Symmetry.CharacterTables.rotate_symels_to_mol().
+    For some point groups (C2h, Cs, etc.), a secondary axis is not defined as the symmetry elements 
+    of the point group are ambivilant to rotation about the primary axis.
     
     The procedure for detecting symmetry is similar to that employed in doi:10.1002/jcc.23493.
 """
@@ -32,7 +34,7 @@ function find_point_group(mol::Vector{<:Atom})
         n, axes = num_C2(mol, SEAs)
         invertable = Molecules.isequivalent(Molecules.transform(mol, Molecules.inversion_matrix()), mol)
         if n == 15
-            # paxis is any C2 axis, saxis is defined as the C2 axis that is coplanar with: paxis and the nearest C3 axis to paxis
+            # paxis is any C2 axis, saxis is defined as the C2 axis that is coplanar with paxis and the nearest C3 axis to paxis
             paxis = axes[1]
             c3s = find_C3s_for_Ih(mol)
             for c3 in c3s
@@ -54,7 +56,11 @@ function find_point_group(mol::Vector{<:Atom})
             #        break
             #    end
             #end
-            pg = "Ih"
+            if invertable
+                pg = "Ih"
+            else
+                pg = "I"
+            end
         elseif n == 9
             # paxis and saxis are orthogonal C4 axes
             c4s = find_C4s_for_Oh(mol)
@@ -86,10 +92,12 @@ function find_point_group(mol::Vector{<:Atom})
             # Therefore, maximum rotation order of 2
             c2 = find_c2(mol, SEAs)
             if c2 !== nothing
+                # Define paxis as the highest ordered rotation axis, this is always of order 2 here
                 paxis = c2
                 c2_ortho_chk, c2_ortho = is_there_ortho_c2(mol, c2, SEAs)
                 σh = is_there_σh(mol, c2)
                 if c2_ortho_chk
+                    # Define saxis as one of the orthogonal C2's
                     saxis = c2_ortho
                     if σh
                         pg = "D2h"
@@ -108,6 +116,7 @@ function find_point_group(mol::Vector{<:Atom})
                         σv_chk, σv = is_there_σv(mol, SEAs, c2)
                         if σv_chk
                             if σv !== nothing
+                                # Define saxis as the normal vector to a plane of symmetry
                                 saxis = normalize(σv)
                             end
                             pg = "C2v"
@@ -124,6 +133,7 @@ function find_point_group(mol::Vector{<:Atom})
                     end
                 end
             else
+                # No rotations found
                 if Molecules.isequivalent(Molecules.transform(mol, Molecules.inversion_matrix()), mol)
                     pg = "Ci"
                 else
@@ -142,11 +152,13 @@ function find_point_group(mol::Vector{<:Atom})
             # Path followed if rotation elements found by 'find_rotation_sets'
             rots = find_rotations(mol, rot_set)
             Cn = highest_ordered_axis(rots)
+            # Define paxis as the highest ordered rotation axis
             paxis = rots[1].axis
             q1, c2_ortho = is_there_ortho_c2(mol, paxis, SEAs) # Check for C2 orthogonal to paxis
             q2 = is_there_σh(mol, paxis) # Check for reflection plane orthogonal to paxis
             q3, σv = is_there_σv(mol, SEAs, paxis) # Check for reflection planes containing paxis
             if q1
+                # Define saxis as an orthogonal C2
                 saxis = c2_ortho
                 if q2
                     pg = "D"*string(Cn)*"h"
@@ -163,6 +175,7 @@ function find_point_group(mol::Vector{<:Atom})
                 else
                     if q3
                         if σv !== nothing
+                            # Define saxis as the vector orthogonal to both the paxis and the normal vector of a reflection plane
                             saxis = normalize(cross(paxis, σv))
                         end
                         pg = "C"*string(Cn)*"v"

@@ -1,5 +1,11 @@
 export find_rotation_sets
 
+"""
+Various functions for detecting symmetry elements.
+The functions c2a, c2b, and c2c (as well as similarly named functions) find C2 axes
+in the method described in doi:10.1002/jcc.23493.
+"""
+
 struct rotation_element{F}
     axis::Vector{F}
     order::Int
@@ -26,14 +32,14 @@ function rotation_set_intersection(rotation_set)
     Finds the intersection of the elements in the sets
     within 'rotation_set'
     """
-    out = deepcopy(rotation_set[1])
+    intersection_rotation_sets = deepcopy(rotation_set[1])
     len = size(rotation_set)[1]
     if len > 2
         for i = 1:size(rotation_set)[1]
-            intersect!(out, rotation_set[i])
+            intersect!(intersection_rotation_sets, rotation_set[i])
         end
     end
-    return out
+    return intersection_rotation_sets
 end
 
 function find_rotation_sets(mol::Vector{<:Atom}, SEAs)
@@ -384,7 +390,7 @@ function c2c(mol, cn_axis, sea1, sea2)
 end
 
 function all_c2a(mol, sea)
-    out = []
+    c2s = []
     len = size(sea.set)[1]
     for i = 1:len-1, j = i+1:len
         midpoint = mol[sea.set[i]].xyz + mol[sea.set[j]].xyz
@@ -395,20 +401,20 @@ function all_c2a(mol, sea)
             molB = Molecules.transform(mol, c2)
             check = Molecules.isequivalent(mol, molB)
             if check
-                push!(out, normalize(midpoint))
+                push!(c2s, normalize(midpoint))
             else
                 continue
             end
         end
     end
-    if size(out)[1] < 1
+    if size(c2s)[1] < 1
         return nothing
     end
-    return out
+    return c2s
 end
 
 function all_c2b(mol, sea)
-    out = []
+    c2s = []
     len = size(sea.set)[1]
     for i = 1:len
         c2_axis = normalize(mol[sea.set[i]].xyz)
@@ -416,15 +422,15 @@ function all_c2b(mol, sea)
         molB = Molecules.transform(mol, c2)
         check = Molecules.isequivalent(mol, molB)
         if check
-            push!(out, c2_axis)
+            push!(c2s, c2_axis)
         else
             continue
         end
     end
-    if size(out)[1] < 1
+    if size(c2s)[1] < 1
         return nothing
     end
-    return out
+    return c2s
 end
 
 function highest_ordered_axis(rotations::Vector{Any})
@@ -523,8 +529,10 @@ function mol_is_planar(mol)
 end
 
 function planar_mol_axis(mol)
-    "Finds normal vector of molecule plane, 
-    assuming molecule is planar as checked by mol_is_planar"
+    """
+    Finds normal vector of molecule plane, 
+    assuming molecule is planar as checked by mol_is_planar
+    """
     len = size(mol,1)
     for i = 1:len
         for j = i:len
