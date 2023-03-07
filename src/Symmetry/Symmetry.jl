@@ -1,3 +1,12 @@
+
+"""
+Module for determining point group of a molecule within some tolerance tol.
+Includes module CharacterTables which generates information such as symmetry elements,
+character tables, multiplication tables, and irreducible representation matrices.
+Authors: Stephen Goodlett and Nate Kitzmiller
+"""
+
+
 module Symmetry
 
 using Molecules

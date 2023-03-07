@@ -3,6 +3,10 @@ mutable struct Irrep
     characters
 end
 
+"""
+A function that reduces a symel string to a class string, for instance
+taking C_4^1 to C_4. Or C_6^1 and C_6^5 to 2C_6.
+"""
 function c_class_string(classes, pre, r, s)
     "Pushes class string to 'classes' for rotations, but ignores superscript if s is one"
     if s == 1
@@ -12,6 +16,11 @@ function c_class_string(classes, pre, r, s)
     end
 end
 
+"""
+Functions for constructing character tables. The irreps and their characters
+are determined by exploiting the patterns as n increases. Typically there is
+a separate pattern for when n is even vs. odd.
+"""
 function Cn_irr(n)
     irreps = [Irrep("A",ones(n))]
     if n % 2 == 0
@@ -289,8 +298,13 @@ function Dnh_irr(n)
                 c_class_string(classes, "2S", r, s)
             end
             push!(classes, "σh")
-            push!(classes, "$(n>>1)σv")
-            push!(classes, "$(n>>1)σd")
+            if n % 4 == 0
+                push!(classes, "$(n>>1)σv")
+                push!(classes, "$(n>>1)σd")
+            else
+                push!(classes, "$(n>>1)σd")
+                push!(classes, "$(n>>1)σv")
+            end
         end
         newnames = []
         for i = 1:length(names)

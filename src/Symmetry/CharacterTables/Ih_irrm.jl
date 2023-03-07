@@ -72,9 +72,9 @@ function generate_irrm_I()
     G[9] = G_C5*(G[25]^4)
     H[9] = H_C5*(H[25]^4)
     
-    dont_touch = [1,9,14,25,59]
+    skip_these = [1,9,14,25,59]
     for i = 1:60
-        if i ∉ dont_touch
+        if i ∉ skip_these
             lil_strang = strangs[i]
             for j in lil_strang
                 T1[i] *= T1[j]
@@ -84,15 +84,15 @@ function generate_irrm_I()
             end
         end
     end
-    big_d = Dict("A"=>A,"T1"=>T1,"T2"=>T2,"G"=>G,"H"=>H)
+    irrep_mat = Dict("A"=>A,"T1"=>T1,"T2"=>T2,"G"=>G,"H"=>H)
     for irr in ["T1","T2","G","H"]
         for i = 1:60
-            if abs(abs(LinearAlgebra.det(big_d[irr][i]))-1) > 1e-12
+            if abs(abs(LinearAlgebra.det(irrep_mat[irr][i]))-1) > 1e-12
                 throw(ErrorException("Bad booty determinant in I"))
             end
         end
     end
-    return big_d
+    return irrep_mat
 end
 
 function generate_irrm_Ih()
@@ -168,7 +168,7 @@ function el_to_prod(element,knowns,kidx,mtable,depth,counter,strang)
         end
     end
     if cidx == 0
-        throw(ErrorException("Poo"))
+        throw(ErrorException("It broke at line 171"))
     end
     append!(strang,ridx)
     if cidx in knowns

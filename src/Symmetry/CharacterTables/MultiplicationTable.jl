@@ -1,4 +1,7 @@
-# Not using this anymore
+"""
+Most of this code is legacy, but the functions `multifly` and `build_mult_table`
+are still used to obtain the group multiplication table.
+"""
 struct MTable
     symels
     table
@@ -13,6 +16,9 @@ struct Group
     ctable
 end
 
+"""
+Multiply two symels and determine which symel they map to.
+"""
 function multifly(symels::Vector{Symel}, A::Symel, B::Symel)
     Crrep = A.rrep * B.rrep
     for (i,g) in enumerate(symels)
@@ -23,6 +29,9 @@ function multifly(symels::Vector{Symel}, A::Symel, B::Symel)
     throw(ArgumentError("No match found for Symels $(A.symbol) and $(B.symbol)!"))
 end
 
+"""
+Build the multiplication table for the point group from the vector of symels.
+"""
 function build_mult_table(symels)
     h = length(symels)
     t = zeros(Int64,h,h)
@@ -86,9 +95,4 @@ function build_regular_repr(mtab)
         push!(reg_reprs, reg_repr)
     end
     return(reg_reprs)
-end
-
-function jordanize(m)
-    evals, evecs = eigen(m)
-    println(evals)
 end

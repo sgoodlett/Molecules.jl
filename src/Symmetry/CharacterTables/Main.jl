@@ -1,5 +1,17 @@
-
+"""
+Take in a point group string and return all symmetry elements for
+that point group. For the groups Cn, Cnv, Cnh, S2n, Dn, Dnd, and Dnh
+the nth order rotation axis is assumed to be the z-axis. Then, for Cnv,
+the reflection planes are oriented such that the x-axis is contained in
+one of the planes. For Dn, Dnd, and Dnh the x-axis is one of the n C2' axes.
+The name of some symels will not match the typical conventions in Cotton's
+character tables, for instance in the case of D2h, Cotton's C2'(y) is named
+C2''. Similarly, σ(xz) is σv, σ(yz) is σd, and σ(xy) is σh.
+The ordering of the symmetry elements is also not consistent with Cotton, 
+though this issue is mostly corrected by the function `generate_symel_to_class_map`.
+"""
 function pg_to_symels(PG)
+    arg_err_string = "An invalid point group has been given or unexpected parsing of the point group string has occured"
     pg = parse_pg_str(PG)
     symels = Vector{Symel}([Symel("E", [1 0 0; 0 1 0; 0 0 1])])
     σh = [1 0 0; 0 1 0; 0 0 -1]
@@ -31,7 +43,7 @@ function pg_to_symels(PG)
             cns = generate_Cn(pg.n)
             symels = vcat(symels, cns)
         else
-            throw(ArgumentError("Unidentified Point Group!"))
+            throw(ArgumentError(arg_err_string))
         end
     elseif pg.family == "D"
         if pg.subfamily == "h"
@@ -77,7 +89,7 @@ function pg_to_symels(PG)
             end
             symels = vcat(symels, cns, c2s)
         else
-            throw(ArgumentError("Oh shit, the trout population"))
+            throw(ArgumentError(arg_err_string))
         end
     elseif pg.family == "S"
         if isnothing(pg.subfamily) & (pg.n % 2 == 0)
@@ -89,7 +101,7 @@ function pg_to_symels(PG)
             sns = generate_Sn(pg.n, true)
             symels = vcat(symels, cns, sns)
         else
-            throw(ArgumentError("Oh shit, the trout population"))
+            throw(ArgumentError(arg_err_string))
         end
     else
         if pg.family == "T"
@@ -120,12 +132,19 @@ function pg_to_symels(PG)
                 symels = vcat(symels, Is)
             end
         else
-            throw(ArgumentError("Unidentified Point Group!"))
+            throw(ArgumentError(arg_err_string))
         end
     end
     return symels
 end
 
+"""
+Parses point group information from a string. Family indicates the large letter in
+the Schönflies symbol (C,S,D,T,O, or I), the order is the natural number associated
+with the group (3 in C3v), and the subfamily is the smaller letter following the order
+(d in D3d, h in Th, etc.). If the Schönflies symbol has no associated order or subfamily,
+`nothing` is returned.
+"""
 function parse_pg_str(s)
     re = r"([A-Z]+)(\d+)?([a-z]+)?"
     m = match(re, s)
@@ -140,6 +159,11 @@ function parse_pg_str(s)
     return PG(s, family, n, subfamily)
 end
 
+"""
+Calculates the character table entries for a given Schönflies string.
+As of now, complex valued characters are ignored and added with their associated irrep.
+Returns a `CharacterTable` 
+"""
 function pg_to_chartab(PG)
     pg = parse_pg_str(PG)
     irreps = []
@@ -245,7 +269,7 @@ function pg_to_chartab(PG)
                   5.0  0.0  0.0 -1.0  1.0])
             end
         else
-            throw(ArgumentError("Unrecognized Point Group"))
+            throw(ArgumentError("An invalid point group has been given or unexpected parsing of the point group string has occured"))
         end
     end
     class_orders = grab_class_orders(classes)
@@ -253,9 +277,12 @@ function pg_to_chartab(PG)
     for (irr_idx,irrep) in enumerate(irreps)
         irr_dims[irrep] = chars[irr_idx, 1]
     end
-    return Chartable(PG, irreps, classes, class_orders, chars, irr_dims)
+    return CharacterTable(PG, irreps, classes, class_orders, chars, irr_dims)
 end
 
+"""
+Extract class orders into a vector
+"""
 function grab_class_orders(classes)
     ncls = length(classes)
     class_orders = zeros(Int64, ncls)
@@ -265,6 +292,9 @@ function grab_class_orders(classes)
     return class_orders
 end
 
+"""
+Determine class order from string
+"""
 function grab_order(class_str)
     re = r"^(\d+)"
     m = match(re, class_str)
@@ -275,7 +305,10 @@ function grab_order(class_str)
     end
 end
 
-function generate_symel_to_class_map(symels::Vector{Symel}, ctab::Chartable)
+"""
+A vector mapping symmetry elements to the classes they belong to.
+"""
+function generate_symel_to_class_map(symels::Vector{Symel}, ctab::CharacterTable)
     pg = parse_pg_str(ctab.name)
     if pg.n !== nothing
         ns = pg.n>>1 # pg.n floor divided by 2
@@ -312,10 +345,10 @@ function generate_symel_to_class_map(symels::Vector{Symel}, ctab::Chartable)
             # The last class is σv (and then σd if n is even), and the last symels are also these!
             cn_class_map!(class_map, pg.n, 0, 0)
             if pg.n % 2 == 0
-                class_map[end-pg.n+1:end-ns] .= ncls-1
-                class_map[end-ns+1:end] .= ncls
+                class_map[end-pg.n+1:end-ns] .= ncls-1 # σv
+                class_map[end-ns+1:end] .= ncls # σd
             else
-                class_map[end-pg.n+1:end] .= ncls
+                class_map[end-pg.n+1:end] .= ncls # σv
             end
         else
             class_map[2:end] .= 2:nsymel
@@ -355,8 +388,9 @@ function generate_symel_to_class_map(symels::Vector{Symel}, ctab::Chartable)
                         class_map[i] = 3*pg.n+6-i
                     end
                 end
-                # The result of C2'×i changes depending if pg.n ≡ 0 (mod 4)
-                if pg.n % 4 == 0
+                # The result of C2'×i changes depending if pg.n ≡ 0 (mod 4), 
+                # but also D2h doesn't need to be flipped because I treated it special
+                if pg.n % 4 == 0 || pg.n == 2
                     class_map[end-pg.n+1:end-ns] .= ncls-1 # σv
                     class_map[end-ns+1:end] .= ncls # σd
                 else
@@ -429,6 +463,10 @@ function generate_symel_to_class_map(symels::Vector{Symel}, ctab::Chartable)
     return class_map
 end
 
+"""
+Auxilliary function for the `symel_to_class_map`, puts the Cn primary rotations into classes
+of two except for C_2 (i.e. {C_6,C_6^5}, {C_3,C_3^2}, {C_2}).
+"""
 function cn_class_map!(class_map, n, idx_offset, cls_offset)
     for i = 2:n
         if i > (n>>1)+1
@@ -439,18 +477,23 @@ function cn_class_map!(class_map, n, idx_offset, cls_offset)
     end
 end
 
+"""
+Given primary and secondary axes, rotate the molecule to the symmetry element frame
+"""
 function rotate_mol_to_symels(mol, paxis, saxis)
     φ, θ, χ = get_euler_angles(paxis, saxis)
-    dc = dc_mat(φ, θ, χ)
-    #dct = deepcopy(dc)
-    #dct = transpose!(dct, dc)
+    dc = direction_cosine_matrix(φ, θ, χ)
     new_mol = Molecules.transform(mol, dc)
     return new_mol
 end
 
+"""
+Given primary and secondary axes, rotate the symels to the molecule frame. Rotating in this
+way will render the irreducible representation matrices we provide incorrect.
+"""
 function rotate_symels_to_mol(symels, paxis, saxis)
     φ, θ, χ = get_euler_angles(paxis, saxis)
-    dc = dc_mat(φ, θ, χ)
+    dc = direction_cosine_matrix(φ, θ, χ)
     dct = deepcopy(dc)
     dct = transpose!(dct, dc)
     new_symels = Vector{Symel}([])
@@ -460,6 +503,9 @@ function rotate_symels_to_mol(symels, paxis, saxis)
     return new_symels
 end
 
+"""
+Determine the Euler angles for rotating (x,y,z) onto (saxis, paxis × saxis , paxis)
+"""
 function get_euler_angles(paxis, saxis)
     x = [1.0;0.0;0.0]
     y = [0.0;1.0;0.0]
@@ -487,14 +533,13 @@ function get_euler_angles(paxis, saxis)
     rχ = Molecules.rotation_matrix(Z,χ)
     X = rχ*x2N
     Y = rχ*yN
-    #println("Euler Check")
-    #println(Z⋅paxis)
-    #println(X⋅saxis)
-    #println(ynew⋅Y)
     return φ, θ, χ
 end
 
-function dc_mat(φ, θ, χ)
+"""
+Form the direction cosine matrix for rotating by Euler angles φ, θ, χ
+"""
+function direction_cosine_matrix(φ, θ, χ)
     sp = sin(φ)
     cp = cos(φ)
     st = sin(θ)
@@ -505,6 +550,10 @@ function dc_mat(φ, θ, χ)
     return direction_cosine
 end
 
+"""
+Determine where the symels send an atom. Returns an Natom by Nsymel array, where element (i,j)
+is where the ith atom is sent under the jth symel.
+"""
 function get_atom_mapping(mol, symels)
     "symels after transformation"
     amap = zeros(Int, length(mol), length(symels))
@@ -521,6 +570,9 @@ function get_atom_mapping(mol, symels)
     return amap
 end
 
+"""
+A function that checks where an atom is sent under a symel.
+"""
 function where_you_go(mol, atom, symel)
     ratom = Atom(atom.Z, atom.mass, symel.rrep*atom.xyz)
     len = size(mol,1)
@@ -532,36 +584,9 @@ function where_you_go(mol, atom, symel)
     return nothing
 end
 
-function get_salcs(mol, symels, ctab)
-    display(ctab)
-    println(typeof(symels))
-end
-
-function do_things(fn)
-    mol = Molecules.parse_file(fn)
-    mol = Molecules.translate(mol, Molecules.center_of_mass(mol))
-    pg, paxis, saxis = Molecules.Symmetry.find_point_group(mol)
-    println(paxis, saxis)
-    symels = pg_to_symels(pg)
-    #symels = rotate_symels_to_mol(symels, paxis, saxis)
-    println(mol)
-    mol = rotate_mol_to_symels(mol, paxis, saxis)
-    ctab = pg_to_chartab(pg)
-    println(mol)
-    #class_map = generate_symel_to_class_map(symels, ctab)
-    #println(class_map)
-    amap = get_atom_mapping(mol, symels)
-    println(amap)
-    #salcs = get_salcs(mol, symels, ctab)
-end
-
-function do_things2(pg)
-    symels = pg_to_symels(pg)
-    ctab = pg_to_chartab(pg)
-    class_map = generate_symel_to_class_map(symels, ctab)
-    mtab = build_mult_table(symels)
-end
-
+"""
+Given a molecule file, determine the symtext for that molecule
+"""
 function symtext_from_file(fn)
     mol = Molecules.parse_file(fn)
     return symtext_from_mol(mol)
@@ -575,6 +600,9 @@ function symtext_from_file(fn)
     #return SymText(pg, symels, ctab, class_map, atom_map)
 end
 
+"""
+Given a molecule, determine the symtext for that molecule
+"""
 function symtext_from_mol(mol)
     mol = Molecules.translate(mol, Molecules.center_of_mass(mol))
     pg, paxis, saxis = Molecules.Symmetry.find_point_group(mol)
@@ -589,6 +617,9 @@ function symtext_from_mol(mol)
     return mol, SymText(pg, symels, ctab, class_map, atom_map, mtable, length(symels))
 end
 
+"""
+A function that returns an index so that irreps can be sorted into canonical order
+"""
 function irrep_sort_idx(irrep_str)
     bunyon = 0
     # g and ' always go first
