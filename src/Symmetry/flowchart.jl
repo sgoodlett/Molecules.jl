@@ -46,7 +46,7 @@ function find_point_group(mol::Vector{<:Atom})
             end
             # Reorienting vectors such that one face is on the z-axis with "pentagon" pointing at the negative y-axis
             ϕ = (1+sqrt(5))/2
-            θ = -acos(ϕ/sqrt(1+ϕ^2))
+            θ = acos(ϕ/sqrt(1+ϕ^2))
             rmat = Molecules.rotation_matrix(saxis, θ)
             paxis = rmat*paxis
             taxis = rmat*paxis
@@ -117,7 +117,8 @@ function find_point_group(mol::Vector{<:Atom})
                         if σv_chk
                             if σv !== nothing
                                 # Define saxis as the normal vector to a plane of symmetry
-                                saxis = normalize(σv)
+                                saxis = normalize(cross(paxis,σv)) # We do this so water is oriented canonically
+                                #saxis = normalize(σv)
                             end
                             pg = "C2v"
                         else

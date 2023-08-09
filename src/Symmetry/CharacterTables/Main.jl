@@ -481,9 +481,12 @@ end
 Given primary and secondary axes, rotate the molecule to the symmetry element frame
 """
 function rotate_mol_to_symels(mol, paxis, saxis)
-    φ, θ, χ = get_euler_angles(paxis, saxis)
-    dc = direction_cosine_matrix(φ, θ, χ)
-    new_mol = Molecules.transform(mol, dc)
+    z = paxis
+    x = saxis
+    y = z×x
+    rmat = reshape([x;y;z], 3, 3) # This matrix rotates z to paxis, etc., ...
+    rmat_inv = transpose(rmat) # ... so invert it
+    new_mol = Molecules.transform(mol, rmat_inv)
     return new_mol
 end
 
@@ -511,7 +514,7 @@ function get_euler_angles(paxis, saxis)
     y = [0.0;1.0;0.0]
     z = [0.0;0.0;1.0]
     ynew = paxis×saxis
-    zxp = normalize!(z×paxis)
+    zxp = normalize(z×paxis)
     if isnan(zxp[1])
         φ = 0.0
     else
@@ -590,14 +593,6 @@ Given a molecule file, determine the symtext for that molecule
 function symtext_from_file(fn)
     mol = Molecules.parse_file(fn)
     return symtext_from_mol(mol)
-    #mol = Molecules.translate(mol, Molecules.center_of_mass(mol))
-    #pg, paxis, saxis = Molecules.Symmetry.find_point_group(mol)
-    #symels = pg_to_symels(pg)
-    #symels = rotate_symels_to_mol(symels, paxis, saxis)
-    #ctab = pg_to_chartab(pg)
-    #class_map = generate_symel_to_class_map(symels, ctab)
-    #atom_map = get_atom_mapping(mol, symels)
-    #return SymText(pg, symels, ctab, class_map, atom_map)
 end
 
 """
